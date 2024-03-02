@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
-import { createStackNavigator } from '@react-navigation/stack';
+import { createStackNavigator, CardStyleInterpolators, TransitionSpecs } from '@react-navigation/stack';
 import { View, Text, FlatList, TouchableOpacity } from 'react-native';  // Make sure you include TouchableOpacity from 'react-native'
 import { FontAwesome } from '@expo/vector-icons';  // Assuming you are using Expo for vector icons
 import { useNavigation } from '@react-navigation/native';
@@ -11,12 +11,14 @@ import { getAuth, onAuthStateChanged } from "firebase/auth";
 
 
 import HomePage from './screens/HomePage.js';
-import ClenniePage from './screens/ClenniePage.js';
-import ClennieDetails from './screens/ClennieDetails.js';
-import SettingsPage from './screens/SettingsPage.js';
-import VerkopenPage from './screens/VerkopenPage.js';
 
-import InkopenPage from './screens/InkopenPage.js';
+import OnboardingScreen from './screens/OnboardingScreen.js';
+
+import LoginScreen from './screens/auth/LoginScreen.js';
+import WorkoutScreen from './screens/WorkoutScreen.js';
+import SocialScreen from './screens/SocialScreen.js';
+import SearchScreen from './screens/SearchScreen.js';
+import RegisterScreen from './screens/auth/RegisterScreen.js';
 // Register the main component
 AppRegistry.registerComponent(appName, () => App);
 
@@ -25,22 +27,41 @@ const Stack = createStackNavigator();
 
 const App = () => {
 
-
+  const MyTransitionSpec = {
+    animation: 'timing',
+    config: {
+      duration: 300, // This is the duration in milliseconds. Adjust as needed.
+    },
+  };
+  const forFade = ({ current }) => ({
+    cardStyle: {
+      opacity: current.progress,
+    },
+  });
   return (
     // Your main app content here
     <NavigationContainer>
       <Stack.Navigator
-        initialRouteName="Home"
+        initialRouteName="Onboarding"
         screenOptions={{
           headerShown: false,
           headerBackVisible: false,
+          cardStyleInterpolator: forFade, // This applies a horizontal slide transition
+          transitionSpec: {
+            open: MyTransitionSpec,   // Use the default iOS transition spec
+            close: MyTransitionSpec,  // Use the default iOS transition spec
+          },
         }}>
+
+        <Stack.Screen name="Onboarding" options={{ title: 'Onboarding' }} component={OnboardingScreen} />
+        <Stack.Screen name="Login" options={{ title: 'Login' }} component={LoginScreen} />
+        <Stack.Screen name="Register" options={{ title: 'Register' }} component={RegisterScreen} />
+
         <Stack.Screen name="Home" options={{ title: 'GymGrind' }} component={HomePage} />
-        <Stack.Screen name="Clennie" options={{ title: 'Clennies' }} component={ClenniePage} />
-        <Stack.Screen name="ClennieDetails" options={{ title: 'ClennieDetails' }} component={ClennieDetails} />
-        <Stack.Screen name="Settings" options={{ title: 'Settings' }} component={SettingsPage} />
-        <Stack.Screen name="Verkopen" options={{ title: 'Verkopen' }} component={VerkopenPage} />
-        <Stack.Screen name="Inkopen" options={{ title: 'Inkopen' }} component={InkopenPage} />
+        <Stack.Screen name="Workout" options={{ title: 'Workout' }} component={WorkoutScreen} />
+        <Stack.Screen name="Social" options={{ title: 'Social' }} component={SocialScreen} />
+        <Stack.Screen name="Search" options={{ title: 'Search' }} component={SearchScreen} />
+
       </Stack.Navigator>
     </NavigationContainer >
   );
