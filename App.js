@@ -35,7 +35,7 @@ const App = () => {
           headerShown: false,
           headerBackVisible: false,
         }}>
-        <Stack.Screen name="Home" options={{ title: 'Junkielijst' }} component={HomePage} />
+        <Stack.Screen name="Home" options={{ title: 'GymGrind' }} component={HomePage} />
         <Stack.Screen name="Clennie" options={{ title: 'Clennies' }} component={ClenniePage} />
         <Stack.Screen name="ClennieDetails" options={{ title: 'ClennieDetails' }} component={ClennieDetails} />
         <Stack.Screen name="Settings" options={{ title: 'Settings' }} component={SettingsPage} />
