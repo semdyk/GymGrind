@@ -9,6 +9,8 @@ import { getAuth, createUserWithEmailAndPassword } from "firebase/auth";
 import { getFirestore, doc, setDoc } from "firebase/firestore";
 import { db } from '../../firebase';
 
+import { LinearGradient } from 'expo-linear-gradient';
+
 import Icon from 'react-native-vector-icons/FontAwesome'; // Make sure to install this package
 
 const RegisterScreen = () => {
@@ -77,8 +79,8 @@ const RegisterScreen = () => {
                 source={require('../../assets/gymgrindtransparant.png')} // Replace with the path to your image
                 style={styles.logo}
             />
-            <Text style={styles.title}>Brainstormr</Text>
-            <Text style={styles.subtitle}>Unleash your creativity</Text>
+            <Text style={styles.title}>GymGrind</Text>
+            <Text style={styles.subtitle}>Crush your fitness goals!</Text>
 
             <View style={styles.inputContainer}>
                 <Icon name="user" size={20} color="#000" />
@@ -111,9 +113,22 @@ const RegisterScreen = () => {
                     secureTextEntry
                 />
             </View>
-            <TouchableOpacity style={styles.button} onPress={handleRegister}>
-                <Text style={styles.buttonText}>Sign Up</Text>
-            </TouchableOpacity>
+            <View style={styles.buttonContainer}>
+
+                <TouchableOpacity
+                    style={styles.button2Container}
+                    onPress={() => handleRegister()}
+                    activeOpacity={0.8}
+                >
+                    <LinearGradient
+                        colors={['rgba(229, 9, 20, 0.363)',   // Darker red with less transparency
+                            'rgba(241, 39, 17, 0.571)',]} // Adjust the colors as per your requirement
+                        style={styles.start2Button}
+                    >
+                        <Text style={styles.buttonText}>Register</Text>
+                    </LinearGradient>
+                </TouchableOpacity>
+            </View>
             <View style={styles.dividerContainer}>
                 <View style={styles.divider} />
                 <Text style={styles.dividerText}>OR</Text>
@@ -122,7 +137,7 @@ const RegisterScreen = () => {
             <View style={styles.signupContainer}>
                 <Text style={styles.signupText}>Already have an account? </Text>
                 <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-                    <Text style={styles.signupButton}>Sign In</Text>
+                    <Text style={styles.signupButton}>Login</Text>
                 </TouchableOpacity>
             </View>
             {error && <Text style={styles.errorText}>{error}</Text>}
@@ -138,9 +153,24 @@ const styles = StyleSheet.create({
         backgroundColor: '#161616', // Or any other background color you want
     },
     logo: {
-        width: 150, // Adjust the size accordingly
+        width: 180, // Adjust the size accordingly
         height: 150, // Adjust the size accordingly
         marginBottom: 20,
+    },
+    buttonContainer: {
+        justifyContent: 'center',
+        alignItems: 'center',
+        width: "90%",
+    },
+    button2Container: {
+        borderRadius: 20, // Ensure this matches your LinearGradient's borderRadius if you have one
+        width: "90%",
+    },
+    start2Button: {
+        paddingVertical: 10,
+        borderRadius: 20, // Ensure this matches your TouchableOpacity's borderRadius
+        justifyContent: 'center', // Center the content vertically
+        alignItems: 'center', // Center the content horizontally
     },
     title: {
         fontSize: 24,

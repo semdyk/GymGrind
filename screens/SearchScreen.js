@@ -6,7 +6,9 @@ import { useNavigation, useIsFocused } from '@react-navigation/native';
 import { getFirestore, doc, setDoc, collection, addDoc, getDoc, docs, getDocs, query } from "firebase/firestore";
 import { db } from '../firebase';
 
-import BottomBar from '../classes/BottomBar'
+import BottomBar from '../classes/BottomBar';
+
+
 
 const SearchScreen = () => {
     const navigation = useNavigation();

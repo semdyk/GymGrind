@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { FontAwesome5 } from '@expo/vector-icons';
+import { FontAwesome5, FontAwesome, MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const BottomBar = () => {
@@ -9,40 +9,33 @@ const BottomBar = () => {
     const insets = useSafeAreaInsets();
 
     const handleSocial = () => {
-        navigation.navigate('Social'); // This will navigate to the previous screen in the stack
+        navigation.navigate('Test'); // This will navigate to the previous screen in the stack
     };
 
     const handleWorkout = () => {
         navigation.navigate('Workout'); // This will navigate to the previous screen in the stack
     };
 
-    const handleSearch = () => {
-        navigation.navigate('Search'); // This will navigate to the previous screen in the stack
+    const handleWorkoutList = () => {
+        navigation.navigate('Workouts'); // This will navigate to the previous screen in the stack
     };
 
 
     return (
-        <View style={[styles.footer, { paddingVertical: insets.bottom > 0 ? 20 : 10 }]}>
-            <TouchableOpacity
-                activeOpacity={0.7}
-                onPress={() => handleSearch()}
-                style={styles.footerButton}>
-                <FontAwesome5 name="search" size={24} color="white" />
-                <Text style={styles.footerText}>Search</Text>
+        <View style={styles.bottomBar}>
+            <TouchableOpacity onPress={() => handleWorkoutList()} style={styles.bottomBarButton}>
+                <Ionicons name="barbell" size={24} color="#fff" />
+                <Text style={styles.statLabel}>Workouts</Text>
             </TouchableOpacity>
-            <TouchableOpacity
-                activeOpacity={0.7}
-                onPress={() => handleWorkout()}
-                style={styles.footerBigButton}>
-                <FontAwesome5 name="dumbbell" size={24} color="white" />
-                <Text style={styles.footerText}>Workout</Text>
+
+            {/* This button will float above the bar */}
+            <TouchableOpacity onPress={() => handleWorkout()} style={styles.addButton}>
+                <Ionicons name="add-circle" size={48} color="#fff" />
             </TouchableOpacity>
-            <TouchableOpacity
-                activeOpacity={0.7}
-                onPress={() => handleSocial()}
-                style={styles.footerButton}>
-                <FontAwesome5 name="trophy" size={24} color="white" />
-                <Text style={styles.footerText}>Social</Text>
+
+            <TouchableOpacity onPress={() => handleSocial()} style={styles.bottomBarButton}>
+                <Ionicons name="trophy" size={24} color="#fff" />
+                <Text style={styles.statLabel}>Social</Text>
             </TouchableOpacity>
         </View>
     );
@@ -53,58 +46,40 @@ const tabBarHeight = 50;
 const bigButtonSize = tabBarHeight * 1.4;
 
 const styles = StyleSheet.create({
-    footer: {
+    bottomBar: {
         position: 'absolute',
-        left: 0,
-        right: 0,
-        bottom: 0,
-        backgroundColor: '#323232',
+        bottom: 20, // Raise the bar above the bottom of the screen
+        left: 10, // Add some left margin
+        right: 10, // Add some right margin
+        backgroundColor: '#2c2c2e',
         flexDirection: 'row',
-        justifyContent: 'space-around',
-        alignItems: 'center', // This will vertically center the buttons in the footer
+        justifyContent: 'space-between', // Changed to 'space-between' to ensure equal spacing
 
-
-        borderTopLeftRadius: 20,
-        borderTopRightRadius: 20,
+        paddingVertical: 10,
+        borderRadius: 30, // Increase border radius for a more rounded look
         shadowColor: "#000",
         shadowOffset: {
             width: 0,
-            height: -2,
+            height: 10,
         },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-        elevation: 10,
+        shadowOpacity: 0.25,
+        shadowRadius: 10,
+        elevation: 10, // For Android shadow effect
+        alignItems: 'center', // Center items vertically
     },
-    footerButton: {
-        flex: 1, // Add this line
+    bottomBarButton: {
+        flex: 1, // Each button will take equal space
         alignItems: 'center',
         justifyContent: 'center',
-        height: tabBarHeight,
-        width: deviceWidth / 3, // Divide the device width by the number of tabs
     },
-    footerBigButton: {
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginTop: -(bigButtonSize) / 2.5,
-        height: bigButtonSize,
-        width: bigButtonSize,
-        borderRadius: bigButtonSize / 2,
-        backgroundColor: "#161616",
-        borderWidth: 0.1,
-        borderColor: "white",
-        shadowColor: "#000",
-        shadowOffset: {
-            width: 0,
-            height: 4,
-        },
-        shadowOpacity: 0.3,
-        shadowRadius: 5,
-        elevation: 6,
+    addButton: {
+        marginBottom: 1, // Adjust accordingly to your design
     },
-    footerText: {
-        fontWeight: 'bold',
+    statLabel: {
         color: '#fff',
-        fontSize: 12, // Reduced size for better fit
+        fontSize: 14,
+        textAlign: "center",
+        fontWeight: "bold",
     },
 });
 
