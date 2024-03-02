@@ -4,13 +4,13 @@ import { getAuth } from "firebase/auth";
 
 
 const firebaseConfig = {
-    apiKey: "AIzaSyC1KrUgszfmHXXHl4zeTOAQDZHlrhbgWPs",
-    authDomain: "junkielijst.firebaseapp.com",
-    projectId: "junkielijst",
-    storageBucket: "junkielijst.appspot.com",
-    messagingSenderId: "1044860180029",
-    appId: "1:1044860180029:web:ff0d425c590f6f5f9a7c54",
-    measurementId: "G-73MSVZFLJC"
+    apiKey: "AIzaSyC1h2_VHhdmnIhZwYD5vVCqDtPkbo1-VHY",
+    authDomain: "gymgrind-75307.firebaseapp.com",
+    projectId: "gymgrind-75307",
+    storageBucket: "gymgrind-75307.appspot.com",
+    messagingSenderId: "562269260415",
+    appId: "1:562269260415:web:8ec15dbf1f2927f2d54d4a",
+    measurementId: "G-QY8XE80M3T"
 };
 
 const firebaseApp = initializeApp(firebaseConfig);

@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "Excel",
-    "slug": "jlijst",
+    "name": "GymGrind",
+    "slug": "gymgrind",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -22,7 +22,7 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.dykstudios.jlijst"
+      "package": "com.dykstudios.gymgrind"
     },
     "web": {
       "favicon": "./assets/favicon.png"
