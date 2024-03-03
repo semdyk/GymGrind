@@ -8,6 +8,9 @@ import Icon from 'react-native-vector-icons/FontAwesome'; // Make sure to instal
 
 import { LinearGradient } from 'expo-linear-gradient';
 
+import { updateOnlineStatus } from '../../classes/FriendHandler';
+
+
 const auth = getAuth();
 
 const LoginScreen = () => {
@@ -20,7 +23,9 @@ const LoginScreen = () => {
 
     const handleLogin = async () => {
         try {
-            await signInWithEmailAndPassword(auth, email, password);
+            const userCredential = await signInWithEmailAndPassword(auth, email, password);
+            console.log(userCredential)
+            await updateOnlineStatus(userCredential.user.uid);
             //Logger.logUserAction(auth.currentUser, 'userLogin', { email: email });
             navigation.navigate('Home');
         } catch (error) {

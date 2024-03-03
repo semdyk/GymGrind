@@ -6,7 +6,9 @@ import { useNavigation } from '@react-navigation/native';
 
 
 import { getAuth, createUserWithEmailAndPassword } from "firebase/auth";
-import { getFirestore, doc, setDoc } from "firebase/firestore";
+import { getFirestore, doc, setDoc, collection } from "firebase/firestore";
+import { getDatabase, ref, onValue, set, onDisconnect, serverTimestamp } from 'firebase/database';
+
 import { db } from '../../firebase';
 
 import { LinearGradient } from 'expo-linear-gradient';
@@ -42,15 +44,44 @@ const RegisterScreen = () => {
                 email: email,
                 level: 1,
                 xp: 1,
-                profilePicture: "notset",
+                profilePicture: "https://firebasestorage.googleapis.com/v0/b/gymgrind-75307.appspot.com/o/profile_pictures%2Fgymlogoprofile.png?alt=media&token=fbf5318e-536c-4601-a82d-4ffe7955c7a4",
                 rank: "user",
-                admin: 0,
-                badges: "[]",
-                theme: "dark",
+                streak: 0,
                 // Include any other user info you want to save
                 // You can also add a createdAt field if you want to keep track of when the user was created
                 createdAt: new Date()
             });
+
+            const friendsCollectionRef = collection(db, "users", userId, "friends");
+            const friendRequestsCollectionRef = collection(db, "users", userId, "friendRequests");
+
+            const userStatusDatabaseRef = ref(getDatabase(), 'status/' + userId);
+
+            // Listen for changes in the connection state
+            const isOfflineForDatabase = {
+                state: 'offline',
+                last_changed: serverTimestamp(),
+            };
+
+            const isOnlineForDatabase = {
+                state: 'online',
+                last_changed: serverTimestamp(),
+            };
+
+            const connectedRef = ref(getDatabase(), '.info/connected');
+            onValue(connectedRef, async (snapshot) => {
+                // If we're not currently connected, don't do anything
+                if (snapshot.val() === false) {
+                    return;
+                }
+
+                // If we are connected, set up the disconnect operation and then set the user's status to online
+                await onDisconnect(userStatusDatabaseRef).set(isOfflineForDatabase);
+                set(userStatusDatabaseRef, isOnlineForDatabase);
+            });
+
+            // No need to add documents to these collections right now, they will be populated as friends are added
+
 
             navigation.navigate('Login');
         } catch (error) {

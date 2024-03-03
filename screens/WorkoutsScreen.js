@@ -10,7 +10,7 @@ import BottomBar from '../classes/BottomBar';
 
 
 
-const SearchScreen = () => {
+const WorkoutsScreen = () => {
     const navigation = useNavigation();
 
 
@@ -25,7 +25,7 @@ const SearchScreen = () => {
     // You might have state variables and functions to handle the logic here
     return (
         <View style={styles.container}>
-            <Text style={styles.header}>Search</Text>
+            <Text style={styles.header}>Workouts</Text>
             <TouchableOpacity onPress={handleSettings} style={styles.settingsbutton}>
                 <FontAwesome name="user-circle" size={24} color="white" />
             </TouchableOpacity>
@@ -99,4 +99,4 @@ const styles = StyleSheet.create({
     },
 });
 
-export default SearchScreen;
+export default WorkoutsScreen;

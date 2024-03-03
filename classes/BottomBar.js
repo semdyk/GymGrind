@@ -9,7 +9,7 @@ const BottomBar = () => {
     const insets = useSafeAreaInsets();
 
     const handleSocial = () => {
-        navigation.navigate('Test'); // This will navigate to the previous screen in the stack
+        navigation.navigate('Social'); // This will navigate to the previous screen in the stack
     };
 
     const handleWorkout = () => {
