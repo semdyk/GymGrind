@@ -6,10 +6,11 @@ class UserData {
   #level;
   #xp;
   #rank;
-
+  #streak;
 
   constructor() {
     this.#level = 'Not set';
+    this.#xp = 0;
     this.#xp = 0;
   }
 
@@ -69,8 +70,16 @@ class UserData {
     this.#rank = value;
   }
 
+  get streak() {
+    return this.#rank;
+  }
+
+  set streak(value) {
+    this.#streak = value;
+  }
+
   // A method to update multiple fields at once
-  setUserData({ username, email, userID, profilePic, level, xp, rank, admin, badges, theme }) {
+  setUserData({ username, email, userID, profilePic, level, xp, rank, streak }) {
     this.#username = username;
     this.#email = email;
     this.#userID = userID;
@@ -78,6 +87,7 @@ class UserData {
     this.#level = level;
     this.#xp = xp;
     this.#rank = rank;
+    this.#streak = streak;
   }
 
   getUserData() {
@@ -89,6 +99,7 @@ class UserData {
       level: this.#level,
       xp: this.#xp,
       rank: this.#rank,
+      streak: this.#streak,
     };
   }
 }

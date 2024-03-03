@@ -12,29 +12,37 @@ const sendFriendRequest = async (userId, friendId) => {
 };
 
 // Accept a friend request
-const acceptFriendRequest = async (userId, friendId) => {
+const acceptFriendRequest = async (userId, friendId, onSuccess) => {
+    console.log(userId, friendId);
     // Add each other to the friends subcollection
     await setDoc(doc(db, 'users', userId, 'friends', friendId), {
-        friendId: friendId,
+        userId: friendId,
         createdAt: new Date(),
     });
     await setDoc(doc(db, 'users', friendId, 'friends', userId), {
-        friendId: userId,
+        userId: userId,
         createdAt: new Date(),
     });
 
     // Remove the friend request after accepting
     await deleteDoc(doc(db, 'users', userId, 'friendRequests', friendId));
+
+    if (onSuccess) onSuccess(friendId);
 };
 
 // Fetch friend requests
 const fetchFriendRequests = async (userId) => {
-    const querySnapshot = await getDocs(collection(db, 'users', userId, 'friendRequests'));
-    let friendRequests = [];
-    querySnapshot.forEach((doc) => {
-        friendRequests.push(doc.data());
-    });
-    return friendRequests;
+    try {
+        const querySnapshot = await getDocs(collection(db, 'users', userId, 'friendRequests'));
+        let friendRequests = [];
+        querySnapshot.forEach((doc) => {
+            friendRequests.push(doc.data());
+        });
+        console.log("friendRequests")
+        return friendRequests;
+    } catch (error) {
+        console.error("Error fetching friend data:", error);
+    }
 };
 
 // Fetch friends list

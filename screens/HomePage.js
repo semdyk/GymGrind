@@ -5,7 +5,7 @@ import { useNavigation, useIsFocused } from '@react-navigation/native';
 
 import { LinearGradient } from 'expo-linear-gradient';
 
-import { getFirestore, doc, setDoc, collection, addDoc, getDoc, docs, getDocs, query } from "firebase/firestore";
+import { getFirestore, doc, setDoc, collection, addDoc, getDoc, docs, onSnapshot, getDocs, query } from "firebase/firestore";
 import { db } from '../firebase';
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { getDatabase, ref, onValue } from 'firebase/database';
@@ -26,6 +26,18 @@ const HomePage = () => {
     const [userData, setUserData] = useState([]);
     const [friendList, setFriendList] = useState([]);
     const [onlineStatuses, setOnlineStatuses] = useState({}); // New state for tracking online statuses
+
+    const [isModalVisible, setIsModalVisible] = useState(false);
+    const [friendRequests, setFriendRequests] = useState([]);
+
+    const handleNotifications = async () => {
+        const userId = auth.currentUser ? auth.currentUser.uid : null;
+        setIsModalVisible(true);
+
+        // Assuming you have a function to fetch friend requests
+        const requests = await fetchFriendRequests(userId);
+        setFriendRequests(requests);
+    };
 
     // Assuming friendList is fetched elsewhere and does not change often
     const friendIds = useMemo(() => friendList.map(friend => friend.userId), [friendList]);
@@ -49,6 +61,71 @@ const HomePage = () => {
         };
     }, [friendIds]); // Depend on friendIds
 
+    const handleFriendRequest = async (ownId, senderId) => {
+        await acceptFriendRequest(ownId, senderId, async (newFriendId) => {
+            // Fetch details of the newly added friend
+            const newFriendRef = doc(db, 'users', newFriendId);
+            const newFriendSnap = await getDoc(newFriendRef);
+
+            if (newFriendSnap.exists()) {
+                const newFriendData = newFriendSnap.data();
+                const newFriend = {
+                    userId: newFriendId,
+                    ...newFriendData,
+                    status: 'online', // Assume the friend is online for now; adjust as needed
+                };
+
+                // Immediately update the friendList state with the new friend
+                setFriendList((currentFriends) => [...currentFriends, newFriend]);
+
+                // Optionally, call fetchAndSetFriends to refresh the entire friend list
+                // This can ensure that the list is fully up-to-date, but may not be necessary
+                // if you're confident in the integrity of the state update above.
+                // fetchAndSetFriends();
+            }
+
+            // Close the modal after processing the friend request
+            setIsModalVisible(false);
+        });
+    };
+
+    const fetchAndSetFriends = async () => {
+        try {
+            setFriendList([]);
+            // Fetch the array of friends
+            const friendsData = await fetchFriends(userId);
+
+            // For each friend, fetch their online status
+            const friendsDataWithStatus = await Promise.all(friendsData.map(async (friend) => {
+                const status = await getOnlineStatus(friend.userId); // Make sure to await the status
+                return { ...friend, status }; // Return a new object with all of friend's data and their status
+            }));
+
+            // Update the state with the new array
+            setFriendList(friendsDataWithStatus);
+        } catch (error) {
+            console.error("Error fetching friends and status:", error);
+        }
+    };
+
+
+    const sortedFriendList = useMemo(() => {
+        // Clone the friendList array to avoid directly mutating the state
+        const friends = [...friendList];
+
+        // Sort the cloned array
+        friends.sort((a, b) => {
+            // Assuming online status is 'online' or 'offline'
+            // Convert statuses to numbers for comparison: online > offline
+            const statusA = onlineStatuses[a.userId] === "online" ? 1 : 0;
+            const statusB = onlineStatuses[b.userId] === "online" ? 1 : 0;
+
+            // Sort by descending status value, so online friends come first
+            return statusB - statusA;
+        });
+
+        return friends;
+    }, [friendList, onlineStatuses]);
 
     useEffect(() => {
         const fetchUserData = async () => {
@@ -70,6 +147,7 @@ const HomePage = () => {
                         level: data.level || 'Not set',
                         xp: data.xp, // If level is not set, display 'Not set' or any default text
                         rank: data.rank,
+                        streak: data.streak,
                     }
                     userDataInstance.setUserData(datauser);
 
@@ -77,25 +155,7 @@ const HomePage = () => {
                     const allUserData = userDataInstance.getUserData();
                     setUserData(allUserData)
 
-                    const fetchAndSetFriends = async () => {
-                        try {
-                            // Fetch the array of friends
-                            const friendsData = await fetchFriends(userId);
 
-                            // For each friend, fetch their online status
-                            const friendsDataWithStatus = await Promise.all(friendsData.map(async (friend) => {
-                                const status = await getOnlineStatus(friend.userId); // Make sure to await the status
-                                return { ...friend, status }; // Return a new object with all of friend's data and their status
-                            }));
-
-                            console.log(friendsDataWithStatus)
-
-                            // Update the state with the new array
-                            setFriendList(friendsDataWithStatus);
-                        } catch (error) {
-                            console.error("Error fetching friends and status:", error);
-                        }
-                    };
                     fetchAndSetFriends();
 
                 } else {
@@ -138,6 +198,10 @@ const HomePage = () => {
     const handleSettings = () => {
         navigation.navigate('Settings'); // This will navigate to the previous screen in the stack
     };
+
+    const handleRefresh = async () => {
+        await fetchAndSetFriends(); // This will navigate to the previous screen in the stack
+    };
     // {userData.username}
     // You might have state variables and functions to handle the logic here
     return (
@@ -146,11 +210,17 @@ const HomePage = () => {
             <TouchableOpacity onPress={handleSettings} style={styles.settingsbutton}>
                 <FontAwesome name="user-circle" size={24} color="white" />
             </TouchableOpacity>
+            <TouchableOpacity onPress={handleNotifications} style={styles.notificationsbutton}>
+                <Ionicons name="notifications" size={24} color="white" />
+            </TouchableOpacity>
             <ScrollView>
 
-                <View style={styles.card}>
-                    <Text style={styles.cardHeader}>Online Friends</Text>
-                    <ScrollView horizontal style={styles.subFriendCardCont}>
+                <View style={[styles.card, { height: 150 }]}>
+                    <TouchableOpacity onPress={handleRefresh} style={styles.refreshButton}>
+                        <FontAwesome name="refresh" size={24} color="white" />
+                    </TouchableOpacity>
+                    <Text style={styles.cardHeader}>Friends</Text>
+                    <ScrollView horizontal style={styles.subFriendCardCont} >
                         {/*}
                         <View style={styles.subFriendCardLabelCont}>
                             <TouchableOpacity style={styles.subFriendCard}>
@@ -166,7 +236,7 @@ const HomePage = () => {
                             <Text style={styles.statFriendLabel}>Kenobe</Text>
                         </View>
                         {*/}
-                        {friendList.map((friend, index) => (
+                        {sortedFriendList.map((friend, index) => (
 
                             <View key={index} style={styles.subFriendCardLabelCont}>
                                 <TouchableOpacity style={styles.subFriendCard}>
@@ -226,7 +296,7 @@ const HomePage = () => {
                             style={[styles.subCard]}>
                             <View style={styles.statContent}>
                                 <FontAwesome5 name="fire" size={20} color="#fff" />
-                                <Text style={styles.statNumber}>5</Text>
+                                <Text style={styles.statNumber}>{parseInt(userData.streak)}</Text>
                                 <Text style={styles.statLabel}>Streak</Text>
                             </View>
                         </LinearGradient>
@@ -254,12 +324,92 @@ const HomePage = () => {
 
             </ScrollView>
 
+            <Modal
+                animationType="slide"
+                transparent={true}
+                visible={isModalVisible}
+                onRequestClose={() => {
+                    setIsModalVisible(!isModalVisible);
+                }}
+            >
+                <View style={styles.centeredView}>
+                    <View style={styles.modalView}>
+                        <Text style={styles.modalText}>Friend Requests</Text>
+                        {friendRequests.map((request) => (
+                            <View key={request.senderId} style={styles.friendRequestItem}>
+                                <Text style={styles.friendRequestText}>{request.senderId}</Text>
+                                <TouchableOpacity style={styles.buttonAccept} onPress={() => handleFriendRequest(userId, request.senderId)}>
+                                    <Text style={styles.textStyle}>Accept</Text>
+                                </TouchableOpacity>
+                                {/* Implement declineFriendRequest in a similar way */}
+                            </View>
+                        ))}
+                        <TouchableOpacity
+                            style={[styles.button, styles.buttonClose]}
+                            onPress={() => setIsModalVisible(!isModalVisible)}
+                        >
+                            <Text style={styles.textStyle}>Close</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
+
             <BottomBar></BottomBar>
         </View >
     );
 }
 
 const styles = StyleSheet.create({
+    centeredView: {
+        flex: 1,
+        justifyContent: "center",
+        alignItems: "center",
+        marginTop: 22
+    },
+    modalView: {
+        margin: 20,
+        backgroundColor: "white",
+        borderRadius: 20,
+        padding: 35,
+        alignItems: "center",
+        shadowColor: "#000",
+        shadowOffset: {
+            width: 0,
+            height: 2
+        },
+        shadowOpacity: 0.25,
+        shadowRadius: 4,
+        elevation: 5
+    },
+    buttonAccept: {
+        borderRadius: 20,
+        padding: 10,
+        elevation: 2,
+        backgroundColor: "#2196F3", // Or any color you like
+    },
+    buttonClose: {
+        backgroundColor: "#A9A9A9", // Or any color you like
+    },
+    textStyle: {
+        color: "white",
+        fontWeight: "bold",
+        textAlign: "center"
+    },
+    modalText: {
+        marginBottom: 15,
+        textAlign: "center"
+    },
+    friendRequestItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        width: '100%',
+        marginBottom: 10,
+    },
+    friendRequestText: {
+        color: '#000', // Or any color you like
+        fontSize: 16,
+    },
     container: {
         flex: 1,
         backgroundColor: '#161616',
@@ -269,6 +419,18 @@ const styles = StyleSheet.create({
         position: 'absolute',
         top: 55, // Adjust the value as needed
         right: 20, // Adjust the value as needed
+        zIndex: 10, // Make sure the button is clickable by setting zIndex
+    },
+    refreshButton: {
+        position: 'absolute',
+        top: 15, // Adjust the value as needed
+        right: 20, // Adjust the value as needed
+        zIndex: 10, // Make sure the button is clickable by setting zIndex
+    },
+    notificationsbutton: {
+        position: 'absolute',
+        top: 55, // Adjust the value as needed
+        right: 55, // Adjust the value as needed
         zIndex: 10, // Make sure the button is clickable by setting zIndex
     },
 
