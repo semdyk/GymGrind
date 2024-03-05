@@ -3,10 +3,11 @@ import { db } from '../firebase';
 import { getDatabase, ref, onValue, set, onDisconnect, get, serverTimestamp } from 'firebase/database';
 
 // Send a friend request
-const sendFriendRequest = async (userId, friendId) => {
+const sendFriendRequest = async (userId, friendId, senderName) => {
     await setDoc(doc(db, 'users', friendId, 'friendRequests', userId), {
         senderId: userId,
         status: 'pending',
+        name: senderName,
         createdAt: new Date(),
     });
 };

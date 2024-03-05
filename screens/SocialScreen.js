@@ -5,6 +5,10 @@ import { useNavigation } from '@react-navigation/native';
 import { getFirestore, doc, setDoc, query, collection, where, getDocs, serverTimestamp } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 import BottomBar from '../classes/BottomBar'; // Ensure this path matches your file structure
+import userDataInstance from '../classes/UserData';
+
+import { sendFriendRequest, acceptFriendRequest, fetchFriendRequests, fetchFriends, getOnlineStatus, listenToOnlineStatus } from '../classes/FriendHandler';
+
 
 const db = getFirestore();
 const auth = getAuth();
@@ -34,13 +38,9 @@ const SocialScreen = () => {
         setSearchResults(results);
     };
 
-    const sendFriendRequest = async (receiverId) => {
+    const sendFriendRequestHandler = async (receiverId) => {
         const senderId = auth.currentUser.uid;
-        await setDoc(doc(db, "users", receiverId, "friendRequests", senderId), {
-            senderId: senderId,
-            status: "pending",
-            timestamp: serverTimestamp(),
-        });
+        await sendFriendRequest(senderId, receiverId, userDataInstance.getUserData().username)
         console.log("Friend request sent.");
     };
 
@@ -78,7 +78,7 @@ const SocialScreen = () => {
                         {searchResults.map((user) => (
                             <View key={user.id} style={styles.userResult}>
                                 <Text style={styles.username}>{user.username}</Text>
-                                <TouchableOpacity onPress={() => sendFriendRequest(user.id)} style={styles.requestButton}>
+                                <TouchableOpacity onPress={() => sendFriendRequestHandler(user.id)} style={styles.requestButton}>
                                     <Text style={styles.requestButtonText}>Send Request</Text>
                                 </TouchableOpacity>
                             </View>

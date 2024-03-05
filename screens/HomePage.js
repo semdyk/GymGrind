@@ -9,7 +9,7 @@ import { getFirestore, doc, setDoc, collection, addDoc, getDoc, docs, onSnapshot
 import { db } from '../firebase';
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { getDatabase, ref, onValue } from 'firebase/database';
-import { sendFriendRequest, acceptFriendRequest, fetchFriendRequests, fetchFriends, getOnlineStatus, listenToOnlineStatus } from '../classes/FriendHandler';
+import { sendFriendRequest, acceptFriendRequest, fetchFriendRequests, fetchFriends, getOnlineStatus, listenToOnlineStatus, handleFriendRequestDecline } from '../classes/FriendHandler';
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -327,29 +327,41 @@ const HomePage = () => {
             <Modal
                 animationType="slide"
                 transparent={true}
+                style={styles.modalStyle}
                 visible={isModalVisible}
                 onRequestClose={() => {
                     setIsModalVisible(!isModalVisible);
                 }}
             >
-                <View style={styles.centeredView}>
-                    <View style={styles.modalView}>
+                <View style={[styles.centeredView]}>
+                    <View style={[styles.modalView]}>
                         <Text style={styles.modalText}>Friend Requests</Text>
-                        {friendRequests.map((request) => (
-                            <View key={request.senderId} style={styles.friendRequestItem}>
-                                <Text style={styles.friendRequestText}>{request.senderId}</Text>
-                                <TouchableOpacity style={styles.buttonAccept} onPress={() => handleFriendRequest(userId, request.senderId)}>
-                                    <Text style={styles.textStyle}>Accept</Text>
-                                </TouchableOpacity>
-                                {/* Implement declineFriendRequest in a similar way */}
-                            </View>
-                        ))}
-                        <TouchableOpacity
-                            style={[styles.button, styles.buttonClose]}
-                            onPress={() => setIsModalVisible(!isModalVisible)}
+                        <ScrollView showsVerticalScrollIndicator={true} persistentScrollbar={true} style={{ flex: 1, width: '100%' }}>
+                            {friendRequests.map((request) => (
+                                <View key={request.senderId} style={styles.friendRequestItem}>
+                                    <Text style={styles.friendRequestText}>{request.name}</Text>
+                                    <View style={styles.buttonsContainer}>
+                                        <TouchableOpacity style={styles.buttonAccept} onPress={() => handleFriendRequest(userId, request.senderId)}>
+                                            <FontAwesome5 name="check" size={20} color="#fff" />
+                                        </TouchableOpacity>
+                                        <TouchableOpacity style={styles.buttonDecline} onPress={() => handleFriendRequestDecline(userId, request.senderId)}>
+                                            <FontAwesome style={{ alignSelf: "center" }} name="close" size={20} color="#fff" />
+                                        </TouchableOpacity>
+                                    </View>
+                                </View>
+                            ))}
+                        </ScrollView>
+                        <LinearGradient
+                            colors={['rgba(229, 9, 20, 0.363)', 'rgba(241, 39, 17, 0.571)']}
+                            style={styles.buttonCloseGradient}
                         >
-                            <Text style={styles.textStyle}>Close</Text>
-                        </TouchableOpacity>
+                            <TouchableOpacity
+                                style={styles.buttonClose}
+                                onPress={() => setIsModalVisible(!isModalVisible)}
+                            >
+                                <Text style={styles.textStyle}>Close</Text>
+                            </TouchableOpacity>
+                        </LinearGradient>
                     </View>
                 </View>
             </Modal>
@@ -360,54 +372,120 @@ const HomePage = () => {
 }
 
 const styles = StyleSheet.create({
+    modalStyle: {
+        position: "absolute",
+    },
+    scrollView: {
+        flex: 1, // Allows the ScrollView to expand within the modal, leaving space for the close button
+        width: '100%', // Ensures the ScrollView takes the full width of the modal
+    },
     centeredView: {
         flex: 1,
-        justifyContent: "center",
-        alignItems: "center",
-        marginTop: 22
+        justifyContent: 'flex-start', // Aligns content to the top
+        alignItems: 'flex-end', // Aligns content to the right
+        marginTop: -5,
+        marginRight: 30,
+
     },
     modalView: {
         margin: 20,
-        backgroundColor: "white",
+
+        marginTop: 60, // Adjust based on the notification button's position
+        backgroundColor: "#323232",
         borderRadius: 20,
         padding: 35,
+        height: 320,
+        paddingTop: 20, // Reduced padding-top for a more compact header
         alignItems: "center",
+        width: 260, // Adjust based on your preference
         shadowColor: "#000",
-        shadowOffset: {
-            width: 0,
-            height: 2
-        },
+        shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.25,
         shadowRadius: 4,
-        elevation: 5
+        borderWidth: 2,
+        borderColor: "#fff",
+        elevation: 5,
     },
+    modalText: {
+        color: "#fff", // Making the text color white
+        fontWeight: "bold", // Making the text bold
+        fontSize: 14, // Optional: Adjust font size as needed
+        alignSelf: "stretch", // Stretch to align the text to the left
+        textAlign: "center", // Align the text to the left
+        marginBottom: 20, // Space between the title and the content
+    },
+
     buttonAccept: {
         borderRadius: 20,
-        padding: 10,
-        elevation: 2,
-        backgroundColor: "#2196F3", // Or any color you like
+        width: 40,
+        paddingVertical: 6, // Reduced vertical padding
+        paddingHorizontal: 10, // Reduced horizontal padding
+        backgroundColor: "#4CAF50", // A nicer shade of green
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.22,
+        shadowRadius: 2.22,
+        elevation: 3,
+        marginRight: 10, // Added some right margin
     },
+
+    buttonDecline: {
+        borderRadius: 20,
+        width: 40,
+        paddingVertical: 6, // Reduced vertical padding
+        paddingHorizontal: 10, // Reduced horizontal padding
+        backgroundColor: "#f44336", // Red for decline
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.22,
+        shadowRadius: 2.22,
+        elevation: 3,
+    },
+    buttonsContainer: {
+        flexDirection: 'row',
+        justifyContent: 'flex-end', // Aligns buttons to the right
+        flex: 1, // Takes up the remaining space to push buttons to the right
+    },
+    buttonCloseGradient: {
+        borderRadius: 20,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.22,
+        shadowRadius: 2.22,
+        elevation: 3,
+        width: '100%', // Define the width as needed
+        marginTop: 40, // Adjust spacing from the content above
+        marginBottom: -10, // Adjust spacing from the container's bottom
+        alignItems: 'center', // Ensures the content (text) is centered
+        overflow: 'hidden', // Important for borderRadius to take effect on Android
+    },
+
     buttonClose: {
-        backgroundColor: "#A9A9A9", // Or any color you like
+        width: '100%', // Ensure it fills the gradient container
+        paddingVertical: 8,
+        paddingHorizontal: 20,
+        alignItems: 'center', // Center text horizontally
     },
+
     textStyle: {
         color: "white",
         fontWeight: "bold",
-        textAlign: "center"
-    },
-    modalText: {
-        marginBottom: 15,
-        textAlign: "center"
+        textAlign: "center",
+        fontSize: 13,
     },
     friendRequestItem: {
+        width: '100%', // Adjust this based on modalView's padding
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        width: '100%',
+        backgroundColor: "#161616",
+        padding: 6,
+        borderRadius: 15,
         marginBottom: 10,
     },
+
     friendRequestText: {
-        color: '#000', // Or any color you like
+        color: '#fff', // Or any color you like
         fontSize: 16,
     },
     container: {
