@@ -63,7 +63,7 @@ const WorkoutsScreen = () => {
                     <Text style={styles.cardHeader}>Create Workout</Text>
                     <TouchableOpacity
                         style={styles.button2Container}
-                        onPress={() => navigation.navigate('Register', { status: true })}
+                        onPress={() => navigation.navigate('CreateWorkoutScreen')}
                         activeOpacity={0.8}
                     >
                         <LinearGradient
@@ -71,9 +71,11 @@ const WorkoutsScreen = () => {
                                 'rgba(241, 39, 17, 0.571)',]} // Adjust the colors as per your requirement
                             style={styles.start2Button}
                         >
-                            <Text style={styles.buttonText}>Start</Text>
+                            <Text style={styles.buttonText}>Create</Text>
                         </LinearGradient>
                     </TouchableOpacity>
+
+
 
                 </View>
 
@@ -92,7 +94,7 @@ const styles = StyleSheet.create({
     },
     start2Button: {
         paddingVertical: 10,
-        marginTop: 20,
+        marginTop: 10,
         borderRadius: 20, // Ensure this matches your TouchableOpacity's borderRadius
         justifyContent: 'center', // Center the content vertically
         alignItems: 'center', // Center the content horizontally
