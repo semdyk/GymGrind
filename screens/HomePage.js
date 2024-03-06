@@ -5,7 +5,7 @@ import { useNavigation, useIsFocused } from '@react-navigation/native';
 
 import { LinearGradient } from 'expo-linear-gradient';
 
-import { getFirestore, doc, setDoc, collection, addDoc, getDoc, docs, onSnapshot, getDocs, query } from "firebase/firestore";
+import { getFirestore, doc, setDoc, collection, addDoc, orderBy, limit, getDoc, docs, onSnapshot, getDocs, query } from "firebase/firestore";
 import { db } from '../firebase';
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { getDatabase, ref, onValue } from 'firebase/database';
@@ -29,6 +29,8 @@ const HomePage = () => {
 
     const [isModalVisible, setIsModalVisible] = useState(false);
     const [friendRequests, setFriendRequests] = useState([]);
+
+    const [createdWorkouts, setCreatedWorkouts] = useState(0)
 
     const handleNotifications = async () => {
         const userId = auth.currentUser ? auth.currentUser.uid : null;
@@ -127,6 +129,34 @@ const HomePage = () => {
         return friends;
     }, [friendList, onlineStatuses]);
 
+    const [recentWorkouts, setRecentWorkouts] = useState([]);
+
+    useEffect(() => {
+        const fetchWorkoutsDone = async () => {
+            const userId = auth.currentUser?.uid;
+            if (!userId) {
+                console.log("User not logged in");
+                return;
+            }
+
+            const workoutsDoneRef = collection(db, "users", userId, "workouts_done");
+            const q = query(workoutsDoneRef, orderBy("completedAt", "desc"), limit(3));
+
+            try {
+                const querySnapshot = await getDocs(q);
+                const workouts = [];
+                querySnapshot.forEach((doc) => {
+                    workouts.push({ id: doc.id, ...doc.data() });
+                });
+                setRecentWorkouts(workouts);
+            } catch (error) {
+                console.error("Error fetching recent workouts:", error);
+            }
+        };
+
+        fetchWorkoutsDone();
+    }, []);
+
     useEffect(() => {
         const fetchUserData = async () => {
             const userId = auth.currentUser ? auth.currentUser.uid : null;
@@ -157,6 +187,20 @@ const HomePage = () => {
 
 
                     fetchAndSetFriends();
+
+                    const workoutsRef = collection(db, 'users', userId, 'workouts');
+                    try {
+                        // Fetching all documents in the 'workouts' subcollection
+                        const querySnapshot = await getDocs(workoutsRef);
+                        const workouts = [];
+                        querySnapshot.forEach((doc) => {
+                            // Pushing each workout data along with doc.id (workoutId) into the workouts array
+                            workouts.push({ id: doc.id, ...doc.data() });
+                        });
+                        setCreatedWorkouts(workouts.length)
+                    } catch (error) {
+                        console.error("Error fetching workouts:", error);
+                    }
 
                 } else {
                     console.log('No such user!');
@@ -285,7 +329,7 @@ const HomePage = () => {
                             style={[styles.subCard]}>
                             <View style={styles.statContent}>
                                 <FontAwesome5 name="dumbbell" size={20} color="#fff" />
-                                <Text style={styles.statNumber}>6</Text>
+                                <Text style={styles.statNumber}>{createdWorkouts.toString()}</Text>
                                 <Text style={styles.statLabel}>Created Workouts</Text>
                             </View>
                         </LinearGradient>
@@ -314,12 +358,18 @@ const HomePage = () => {
                     </View>
                 </View>
 
-                <View style={styles.card}>
+                <View style={[styles.card, { marginBottom: 60 }]}>
                     <Text style={styles.cardHeader}>Recent Workouts</Text>
-                    <View style={styles.subCardCont}>
-
-
-                    </View>
+                    <ScrollView contentContainerStyle={{ marginTop: 10 }} style={{ marginTop: 10 }}>
+                        {recentWorkouts.map((workout, index) => (
+                            <View key={index} style={styles.workoutCont}>
+                                <Text style={styles.workoutTitle}>{workout.title}</Text>
+                                <Text style={styles.workoutDate}>
+                                    Completed on: {workout.completedAt.toDate().toLocaleDateString()}
+                                </Text>
+                            </View>
+                        ))}
+                    </ScrollView>
                 </View>
 
             </ScrollView>
@@ -428,7 +478,22 @@ const styles = StyleSheet.create({
         elevation: 3,
         marginRight: 10, // Added some right margin
     },
-
+    workoutCont: {
+        backgroundColor: '#575757', // A slightly lighter shade for contrast
+        borderRadius: 10,
+        padding: 15,
+        marginBottom: 15,
+    },
+    workoutTitle: {
+        color: '#fff',
+        fontSize: 16,
+        fontWeight: 'bold',
+    },
+    workoutDate: {
+        color: '#ddd', // Lighter for less emphasis
+        fontSize: 14,
+        marginTop: 5,
+    },
     buttonDecline: {
         borderRadius: 20,
         width: 40,

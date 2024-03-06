@@ -13,7 +13,7 @@ const BottomBar = () => {
     };
 
     const handleWorkout = () => {
-        navigation.navigate('Workout'); // This will navigate to the previous screen in the stack
+        navigation.navigate('CreateWorkoutScreen'); // This will navigate to the previous screen in the stack
     };
 
     const handleWorkoutList = () => {

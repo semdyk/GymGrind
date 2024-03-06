@@ -5,6 +5,9 @@ import { useNavigation, useIsFocused } from '@react-navigation/native';
 
 import { getFirestore, doc, setDoc, collection, addDoc, getDoc, docs, getDocs, query } from "firebase/firestore";
 import { db } from '../firebase';
+import { getAuth, onAuthStateChanged } from "firebase/auth";
+
+const auth = getAuth();
 
 import BottomBar from '../classes/BottomBar';
 
@@ -15,6 +18,34 @@ import { LinearGradient } from 'expo-linear-gradient';
 const WorkoutsScreen = () => {
     const navigation = useNavigation();
 
+    const [workouts, setWorkouts] = useState([])
+
+    useEffect(() => {
+        const fetchWorkouts = async () => {
+            const userId = auth.currentUser ? auth.currentUser.uid : null;
+            if (!userId) return;
+
+            // Pointing to the subcollection 'workouts' for a specific user
+            const workoutsRef = collection(db, 'users', userId, 'workouts');
+            try {
+                // Fetching all documents in the 'workouts' subcollection
+                const querySnapshot = await getDocs(workoutsRef);
+                const workouts = [];
+                querySnapshot.forEach((doc) => {
+                    // Pushing each workout data along with doc.id (workoutId) into the workouts array
+                    workouts.push({ id: doc.id, ...doc.data() });
+                });
+                console.log(workouts); // Logging workouts to see the output
+                setWorkouts(workouts); // Assuming you have a useState hook for storing workouts
+
+            } catch (error) {
+                console.error("Error fetching workouts:", error);
+            }
+        };
+
+        fetchWorkouts();
+    }, []);
+
 
     const handleSettings = () => {
         navigation.navigate('Settings'); // This will navigate to the previous screen in the stack
@@ -22,6 +53,11 @@ const WorkoutsScreen = () => {
 
     const handleBack = () => {
         navigation.navigate('Home');  // This will navigate to the previous screen in the stack
+    };
+
+    const [expandedWorkoutId, setExpandedWorkoutId] = useState(null);
+    const toggleWorkoutVisibility = (workoutId) => {
+        setExpandedWorkoutId(expandedWorkoutId === workoutId ? null : workoutId);
     };
 
     // You might have state variables and functions to handle the logic here
@@ -35,25 +71,35 @@ const WorkoutsScreen = () => {
                 <FontAwesome name="arrow-left" size={24} color="white" />
             </TouchableOpacity>
             <ScrollView style={[styles.cardCont]}>
-                <View style={[styles.card, { height: 400, }]}>
+                <View style={[styles.card, { height: 410, }]}>
                     <Text style={styles.cardHeader}>Workouts</Text>
                     <ScrollView style={styles.workoutListCont}>
+                        {workouts.map((workout, index) => (
+                            <View key={index} style={styles.workoutCont}>
+                                <View style={styles.workoutHeader}>
+                                    <Text style={styles.workoutTextHeader}>{workout.title}</Text>
+                                    <View style={{ flexDirection: "row" }}>
 
-                        <View style={styles.workoutCont}>
-                            <View style={styles.workoutHeader}>
-                                <Text style={styles.workoutTextHeader}>Push</Text>
+                                        <Ionicons onPress={() => navigation.navigate('Workout', { workout: workout })} name="play" size={24} color="white" style={styles.headerIcon} />
+                                        <TouchableOpacity style={{ marginLeft: 10 }} onPress={() => toggleWorkoutVisibility(workout.id)}>
+                                            <Ionicons name={expandedWorkoutId === workout.id ? "chevron-up" : "chevron-down"} size={24} color="white" />
+                                        </TouchableOpacity>
+                                    </View>
 
-                                <Ionicons name="play" size={24} color="white" style={styles.headerIcon} />
+                                </View>
+                                {expandedWorkoutId === workout.id && (
+
+                                    <View style={styles.workoutBody}>
+                                        <Text style={[styles.workoutItem, { marginTop: -10, marginBottom: 10, fontStyle: "italic" }]}>{workout.description}</Text>
+
+                                        {workout.exercises.map((exercise, exerciseIndex) => (
+                                            <Text key={exerciseIndex} style={styles.workoutItem}>• {exercise.title}</Text>
+                                        ))}
+                                    </View>
+                                )}
                             </View>
-                            <View style={styles.workoutBody}>
-                                {/* Example items in the workout */}
-                                <Text style={styles.workoutItem}>Exercise 1</Text>
-                                <Text style={styles.workoutItem}>Exercise 2</Text>
-                                <Text style={styles.workoutItem}>Exercise 3</Text>
-                                {/* Add more items as needed */}
-                            </View>
+                        ))}
 
-                        </View>
 
                     </ScrollView>
 

@@ -8,6 +8,7 @@ import { db } from '../firebase';
 
 import BottomBar from '../classes/BottomBar'
 import { LinearGradient } from 'expo-linear-gradient';
+import { createWorkout } from '../classes/dbHandler';
 
 const CreateWorkoutScreen = () => {
     const navigation = useNavigation();
@@ -16,13 +17,9 @@ const CreateWorkoutScreen = () => {
     const [description, setDescription] = useState("");
     const [exercises, setExercises] = useState([]);
 
-    const updateExercises = () => {
-        setExercises([{ id: 1, title: "Pushups", description: "Exercise Description" }, { id: 1, title: "SitUps", description: "Exercise Description" }, { id: 1, title: "SitUps", description: "Exercise Description" }, { id: 1, title: "SitUps", description: "Exercise Description" }])
-    }
+    const [isModalVisible, setIsModalVisible] = useState(false);
+    const [newExerciseTitle, setNewExerciseTitle] = useState('');
 
-    useEffect(() => {
-        updateExercises();
-    }, []);
 
     const handleSettings = () => {
         navigation.navigate('Settings'); // This will navigate to the previous screen in the stack
@@ -31,6 +28,25 @@ const CreateWorkoutScreen = () => {
     const handleBack = () => {
         navigation.navigate('Workouts');  // This will navigate to the previous screen in the stack
     };
+
+    const handleCreate = async () => {
+        await createWorkout(title, description, exercises)
+        navigation.navigate('Workouts');  // This will navigate to the previous screen in the stack
+    };
+
+    const handleAddExercise = async () => {
+        setExercises([...exercises, { id: Date.now().toString(), title: newExerciseTitle }]);
+        setIsModalVisible(false);
+        setNewExerciseTitle("")
+    }
+
+    const handleRemoveExercise = async (id) => {
+        console.log(id)
+        const updatedExercises = exercises.filter(exercise => exercise.id !== id);
+        setExercises(updatedExercises);
+
+    }
+
 
     // You might have state variables and functions to handle the logic here
     return (
@@ -69,7 +85,7 @@ const CreateWorkoutScreen = () => {
                                 <Text style={styles.excerciseItemText}>{exercise.title}</Text>
                                 <View style={styles.excerciseItemIconContainer}>
                                     <Ionicons name="create" color="lightgreen" size={28} style={{ marginRight: 10, }} />
-                                    <Ionicons name="trash" color="red" size={28} style={{ marginRight: 10, }} />
+                                    <Ionicons onPress={() => handleRemoveExercise(exercise.id)} name="trash" color="red" size={28} style={{ marginRight: 10, }} />
                                 </View>
 
 
@@ -79,7 +95,7 @@ const CreateWorkoutScreen = () => {
 
 
                     </ScrollView>
-                    <TouchableOpacity >
+                    <TouchableOpacity onPress={() => setIsModalVisible(true)} >
                         <LinearGradient
                             colors={['rgba(229, 9, 20, 0.363)',   // Darker red with less transparency
                                 'rgba(241, 39, 17, 0.571)',]} // Adjust the colors as per your requirement
@@ -92,7 +108,7 @@ const CreateWorkoutScreen = () => {
 
 
                 </View>
-                <TouchableOpacity >
+                <TouchableOpacity onPress={handleCreate} >
                     <LinearGradient
                         colors={['rgba(229, 9, 20, 0.363)',   // Darker red with less transparency
                             'rgba(241, 39, 17, 0.571)',]} // Adjust the colors as per your requirement
@@ -104,12 +120,120 @@ const CreateWorkoutScreen = () => {
                 </TouchableOpacity>
             </View>
 
+            <Modal
+                animationType="slide"
+                transparent={true}
+                visible={isModalVisible}
+                onRequestClose={() => {
+                    setIsModalVisible(!isModalVisible);
+                }}
+            >
+                <View style={styles.centeredView}>
+                    <View style={styles.modalView}>
+                        {/* Header */}
+                        <Text style={[styles.textStyle, styles.modalHeader]}>Add Exercise</Text>
+
+                        {/* Input Fields */}
+                        <TextInput
+                            style={styles.modalTextInput}
+                            placeholder="Exercise Title"
+                            placeholderTextColor="#999" // Optional: for better visibility
+                            value={newExerciseTitle}
+                            onChangeText={setNewExerciseTitle}
+                        />
+
+                        {/* Buttons at the Bottom */}
+                        <View style={styles.buttonsContainer}>
+                            <TouchableOpacity
+                                style={[styles.modalButton, styles.modalSaveButton]}
+                                onPress={() => {
+                                    handleAddExercise(newExerciseTitle);
+                                }}
+                            >
+                                <Text style={styles.textStyle}>Save Exercise</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={[styles.modalButton, styles.modalCancelButton]}
+                                onPress={() => {
+                                    setIsModalVisible(false);
+                                }}
+                            >
+                                <Text style={styles.textStyle}>Cancel</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
+
             <BottomBar></BottomBar>
         </View >
     );
 }
 
 const styles = StyleSheet.create({
+    centeredView: {
+        flex: 1,
+        justifyContent: "center",
+        alignItems: "center",
+        marginTop: -50,
+    },
+    modalView: {
+        margin: 20,
+        backgroundColor: "#323232",
+        borderRadius: 20,
+        padding: 35,
+        alignItems: "center",
+        shadowColor: "#000",
+        shadowOffset: {
+            width: 0,
+            height: 2
+        },
+        borderWidth: 2,
+        borderColor: "#fff",
+        shadowOpacity: 0.25,
+        shadowRadius: 4,
+        elevation: 5,
+        width: '80%', // Set a width for the modal
+    },
+    modalHeader: {
+        marginBottom: 20,
+        fontSize: 20,
+    },
+    modalTextInput: {
+        height: 40,
+        width: '100%',
+        marginBottom: 20,
+        borderWidth: 1,
+        padding: 10,
+        borderRadius: 10,
+        color: '#fff', // Ensure text is visible against background
+        borderColor: '#fff', // Optional: Style border
+    },
+    buttonsContainer: {
+        flexDirection: 'row',
+        justifyContent: 'space-around',
+        width: '100%', // Ensure buttons span the modal width
+        marginTop: 20, // Space above buttons
+    },
+    modalButton: {
+        borderRadius: 20,
+        padding: 10,
+        elevation: 2,
+        width: '40%', // Set buttons to occupy 40% of the modal width
+        justifyContent: 'center', // Center text in button
+        alignItems: 'center', // Center text horizontally
+    },
+    modalSaveButton: {
+        backgroundColor: "#2196F3",
+    },
+    modalCancelButton: {
+        backgroundColor: "#f32121",
+    },
+    textStyle: {
+        color: "white",
+        fontWeight: "bold",
+        textAlign: "center"
+    },
     input: {
         borderWidth: 1,
         borderColor: '#ccc',
