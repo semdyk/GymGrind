@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { StyleSheet, ScrollView, View, Image, Text, Modal, TextInput, TouchableOpacity } from 'react-native';
+import { StyleSheet, ScrollView, View, Button, Image, Text, Modal, TextInput, TouchableOpacity } from 'react-native';
 import { FontAwesome, FontAwesome5, Ionicons } from '@expo/vector-icons';
 import { useNavigation, useIsFocused } from '@react-navigation/native';
 
@@ -18,10 +18,23 @@ const auth = getAuth();
 
 import userDataInstance from '../classes/UserData';
 import BottomBar from '../classes/BottomBar'
-
+import { getLevelAndXP } from '../classes/LevelSystem/LevelHandler'
+import LevelUpAnimation from '../classes/LevelSystem/LevelUpAnimation';
+import { levelUpHandler } from '../classes/dbHandler';
 
 const HomePage = () => {
     const navigation = useNavigation();
+
+    const [showAnimation, setShowAnimation] = useState(false);
+    const [newLevel, setNewLevel] = useState(1);
+
+    const triggerLevelUp = (state, level) => {
+        // Trigger the animation first without waiting for the level update
+        setNewLevel(level + 1);
+        setShowAnimation(state);
+    };
+
+
 
     const [userData, setUserData] = useState([]);
     const [friendList, setFriendList] = useState([]);
@@ -30,7 +43,11 @@ const HomePage = () => {
     const [isModalVisible, setIsModalVisible] = useState(false);
     const [friendRequests, setFriendRequests] = useState([]);
 
-    const [createdWorkouts, setCreatedWorkouts] = useState(0)
+    const [createdWorkouts, setCreatedWorkouts] = useState(0);
+    const [doneWorkouts, setDoneWorkouts] = useState(0);
+
+
+
 
     const handleNotifications = async () => {
         const userId = auth.currentUser ? auth.currentUser.uid : null;
@@ -43,6 +60,26 @@ const HomePage = () => {
 
     // Assuming friendList is fetched elsewhere and does not change often
     const friendIds = useMemo(() => friendList.map(friend => friend.userId), [friendList]);
+
+    const onAnimationComplete = () => {
+        // Once the animation is complete, then update the level
+        levelUpHandler(newLevel).then(() => {
+            console.log(`Level up to ${newLevel} complete.`);
+            // You can also handle any follow-up actions here
+            // e.g., updating the UI to reflect the new level
+        }).catch((error) => {
+            console.error("Error during level update after animation: ", error);
+        });
+    };
+
+    useEffect(() => {
+        getLevelAndXP(auth.currentUser.uid).then(({ level, xp }) => {
+            const neededXP = (level * 100);
+            if (xp >= neededXP) {
+                triggerLevelUp(true, level);
+            }
+        });
+    }, []);
 
     useEffect(() => {
         let unsubscribeFunctions = [];
@@ -202,6 +239,20 @@ const HomePage = () => {
                         console.error("Error fetching workouts:", error);
                     }
 
+                    const workoutsDoneRef = collection(db, 'users', userId, 'workouts_done');
+                    try {
+                        // Fetching all documents in the 'workouts' subcollection
+                        const querySnapshot = await getDocs(workoutsDoneRef);
+                        const workouts = [];
+                        querySnapshot.forEach((doc) => {
+                            // Pushing each workout data along with doc.id (workoutId) into the workouts array
+                            workouts.push({ id: doc.id, ...doc.data() });
+                        });
+                        setDoneWorkouts(workouts.length)
+                    } catch (error) {
+                        console.error("Error fetching workouts:", error);
+                    }
+
                 } else {
                     console.log('No such user!');
                 }
@@ -240,7 +291,7 @@ const HomePage = () => {
 
 
     const handleSettings = () => {
-        navigation.navigate('Settings'); // This will navigate to the previous screen in the stack
+        navigation.navigate('ProfilePage', { userId: auth.currentUser.uid }); // This will navigate to the previous screen in the stack
     };
 
     const handleRefresh = async () => {
@@ -258,7 +309,6 @@ const HomePage = () => {
                 <Ionicons name="notifications" size={24} color="white" />
             </TouchableOpacity>
             <ScrollView>
-
                 <View style={[styles.card, { height: 150 }]}>
                     <TouchableOpacity onPress={handleRefresh} style={styles.refreshButton}>
                         <FontAwesome name="refresh" size={24} color="white" />
@@ -291,10 +341,16 @@ const HomePage = () => {
                                     />
                                     <View style={styles.statFriendContent}>
                                         {onlineStatuses[friend.userId] === "online" &&
-                                            <Ionicons name="checkmark-circle" size={18} color="lightgreen" />
+                                            <Ionicons name="checkmark-circle" size={19} color="lightgreen" />
                                         }
                                         {onlineStatuses[friend.userId] === "offline" &&
-                                            <Ionicons name="close-circle" size={18} color="red" />
+                                            <Ionicons name="close-circle" size={19} color="red" />
+                                        }
+                                        {onlineStatuses[friend.userId] === "workout" &&
+                                            <View style={{ backgroundColor: "#2472c1", width: 20, height: 20, justifyContent: "center", alignItems: "center", borderRadius: 10 }}>
+                                                <FontAwesome5 name="running" size={14} color="#ffffff" />
+                                            </View>
+
                                         }
                                     </View>
                                 </TouchableOpacity>
@@ -351,7 +407,7 @@ const HomePage = () => {
                             style={[styles.subCard]}>
                             <View style={styles.statContent}>
                                 <FontAwesome5 name="heartbeat" size={20} color="#fff" />
-                                <Text style={styles.statNumber}>48</Text>
+                                <Text style={styles.statNumber}>{doneWorkouts}</Text>
                                 <Text style={styles.statLabel}>Workouts Done</Text>
                             </View>
                         </LinearGradient>
@@ -415,7 +471,13 @@ const HomePage = () => {
                     </View>
                 </View>
             </Modal>
-
+            {showAnimation && (
+                <LevelUpAnimation
+                    isVisible={showAnimation}
+                    onAnimationComplete={onAnimationComplete}
+                    level={newLevel.toString()}
+                />
+            )}
             <BottomBar></BottomBar>
         </View >
     );
@@ -481,8 +543,8 @@ const styles = StyleSheet.create({
     workoutCont: {
         backgroundColor: '#575757', // A slightly lighter shade for contrast
         borderRadius: 10,
-        padding: 15,
-        marginBottom: 15,
+        padding: 10,
+        marginBottom: 10,
     },
     workoutTitle: {
         color: '#fff',
@@ -492,7 +554,6 @@ const styles = StyleSheet.create({
     workoutDate: {
         color: '#ddd', // Lighter for less emphasis
         fontSize: 14,
-        marginTop: 5,
     },
     buttonDecline: {
         borderRadius: 20,

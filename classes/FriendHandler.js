@@ -156,7 +156,25 @@ const updateOnlineStatus = async (userId) => {
 
 };
 
+const setOnlineStatus = async (userId, status) => {
+    const db = getDatabase();
+    const userStatusDatabaseRef = ref(db, `/status/${userId}`);
+
+    try {
+        // Directly set the user's status based on the passed 'status' variable
+        await set(userStatusDatabaseRef, {
+            state: status, // 'online' or 'offline' as passed in
+            last_changed: serverTimestamp(),
+        });
+
+        console.log(`Successfully set status for user ${userId} to ${status}`);
+    } catch (error) {
+        console.error(`Error updating online status for user ${userId}:`, error);
+        return 'offline'; // Return 'offline' in case of error
+    }
+};
 
 
 
-export { sendFriendRequest, acceptFriendRequest, fetchFriendRequests, fetchFriends, fetchFriendData, updateOnlineStatus, getOnlineStatus, listenToOnlineStatus }
+
+export { sendFriendRequest, acceptFriendRequest, fetchFriendRequests, fetchFriends, fetchFriendData, updateOnlineStatus, setOnlineStatus, getOnlineStatus, listenToOnlineStatus }

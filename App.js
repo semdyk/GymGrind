@@ -22,6 +22,7 @@ import RegisterScreen from './screens/auth/RegisterScreen.js';
 import Test from './screens/Test.js';
 import WorkoutsScreen from './screens/WorkoutsScreen.js';
 import CreateWorkoutScreen from './screens/CreateWorkoutScreen.js';
+import ProfilePage from './screens/ProfilePage.js';
 
 // Register the main component
 AppRegistry.registerComponent(appName, () => App);
@@ -66,6 +67,7 @@ const App = () => {
         <Stack.Screen name="CreateWorkoutScreen" options={{ title: 'CreateWorkoutScreen' }} component={CreateWorkoutScreen} />
         <Stack.Screen name="Social" options={{ title: 'Social' }} component={SocialScreen} />
         <Stack.Screen name="Search" options={{ title: 'Search' }} component={SearchScreen} />
+        <Stack.Screen name="ProfilePage" options={{ title: 'ProfilePage' }} component={ProfilePage} />
 
         <Stack.Screen name="Workouts" options={{ title: 'Workouts' }} component={WorkoutsScreen} />
         <Stack.Screen name="Test" options={{ title: 'Test' }} component={Test} />

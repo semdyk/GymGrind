@@ -22,9 +22,8 @@ const CreateWorkoutScreen = () => {
 
 
     const handleSettings = () => {
-        navigation.navigate('Settings'); // This will navigate to the previous screen in the stack
+        navigation.navigate('ProfilePage', { userId: auth.currentUser.uid }); // This will navigate to the previous screen in the stack
     };
-
     const handleBack = () => {
         navigation.navigate('Workouts');  // This will navigate to the previous screen in the stack
     };

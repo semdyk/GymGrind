@@ -1,16 +1,19 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { StyleSheet, View, Text, TextInput, TouchableOpacity, ScrollView } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import { getFirestore, doc, setDoc, query, collection, where, getDocs, serverTimestamp } from "firebase/firestore";
+import { getFirestore, doc, limit, orderBy, setDoc, query, collection, where, getDocs, serverTimestamp } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 import BottomBar from '../classes/BottomBar'; // Ensure this path matches your file structure
 import userDataInstance from '../classes/UserData';
+import { db } from '../firebase'; // Adjust this import based on your file structure
+
+import { LinearGradient } from 'expo-linear-gradient';
+
 
 import { sendFriendRequest, acceptFriendRequest, fetchFriendRequests, fetchFriends, getOnlineStatus, listenToOnlineStatus } from '../classes/FriendHandler';
 
 
-const db = getFirestore();
 const auth = getAuth();
 
 const SocialScreen = () => {
@@ -18,8 +21,25 @@ const SocialScreen = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [searchResults, setSearchResults] = useState([]);
 
+    const [users, setUsers] = useState([]);
+
+    useEffect(() => {
+        const fetchUsers = async () => {
+            const usersCollectionRef = collection(db, "users"); // Assuming 'users' collection
+            const q = query(usersCollectionRef, orderBy("level", "desc"), limit(10)); // Adjust based on your needs
+            const querySnapshot = await getDocs(q);
+            const usersList = querySnapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            }));
+            setUsers(usersList);
+        };
+
+        fetchUsers();
+    }, []);
+
     const handleSettings = () => {
-        navigation.navigate('Settings');
+        navigation.navigate('ProfilePage', { userId: auth.currentUser.uid }); // This will navigate to the previous screen in the stack
     };
 
     const handleBack = () => {
@@ -88,6 +108,34 @@ const SocialScreen = () => {
                 </View>
             </View>
 
+            <View style={styles.card}>
+                <Text style={styles.cardHeader}>Leaderboard</Text>
+                <View style={styles.subCardCont}>
+                    {/* Horizontal ScrollView for top 3 users */}
+                    <View showsHorizontalScrollIndicator={false} style={topUserStyle.topUserContainerScroll}>
+                        {users.slice(0, 3).map((user, index) => (
+                            <LinearGradient key={user.id} colors={['#9f4c4c', '#983b3b', '#6a1919']} style={topUserStyle.levelBadge}>
+                                <Text style={styles.rank}>{(index + 1).toString()}</Text>
+                                <Text style={topUserStyle.topUsername}>{user.username.toString()}</Text>
+                            </LinearGradient>
+                        ))}
+                    </View>
+
+                    <ScrollView style={styles.restOfUsersContainer}>
+                        {users.slice(3).map((user, index) => (
+                            <View key={user.id} style={styles.userRow}>
+                                {/* Ensure dynamic text is wrapped in <Text> */}
+                                <Text style={styles.rank}>{(index + 4).toString()}</Text>
+                                <Text style={styles.username}>{user.username}</Text>
+                                <LinearGradient colors={['#9f4c4c', '#983b3b', '#6a1919']} style={styles.levelBadge}>
+                                    <Text style={styles.levelText}>{"Level " + user.level}</Text>
+                                </LinearGradient>
+                            </View>
+                        ))}
+                    </ScrollView>
+                </View>
+            </View>
+
 
 
             <BottomBar />
@@ -95,7 +143,51 @@ const SocialScreen = () => {
     );
 };
 
+const topUserStyle = StyleSheet.create({
+    topUserContainerScroll: {
+        flexDirection: 'row',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    levelBadge: {
+        margin: 10,
+        width: 70,
+        paddingVertical: 15,
+        height: 70,
+        borderRadius: 15,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    topUserContainer: {
+        flexDirection: 'row',
+        justifyContent: 'center',
+        alignItems: 'center',
+        width: 70,
+        padding: 10,
+        borderRadius: 50, // Make it round
+        backgroundColor: '#ff0000', // Gold color for top users
+        marginBottom: 15,
+        margin: 10
+    },
+    topUsername: {
+        color: 'white', // Text color for contrast
+        fontWeight: 'bold',
+        fontSize: 16,
+    },
+    topUserLevelText: {
+        color: 'black',
+        fontSize: 14,
+        fontWeight: "bold",
+    },
+});
+
 const styles = StyleSheet.create({
+    topUsersContainer: {
+        marginBottom: 10, // Space between the top users and the rest
+    },
+    restOfUsersContainer: {
+        width: '100%',
+    },
     card: {
         backgroundColor: '#323232',
         borderRadius: 20,
@@ -127,6 +219,55 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         marginBottom: 20,
 
+    },
+    userRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        backgroundColor: "#505050",
+
+        borderRadius: 15,
+        marginBottom: 10,
+        padding: 16
+    },
+    rank: {
+        fontWeight: 'bold',
+        color: "#fff",
+        marginRight: 5,
+    },
+    username: {
+        flex: 1, // To ensure it takes up the space it needs
+        textAlign: 'left',
+        color: "#fff",
+    },
+    nameLevelContainer: {
+        alignItems: 'center',
+        justifyContent: 'center', // This centers the children horizontally in the container
+        alignSelf: "center",
+        marginBottom: 10,
+    },
+    name: {
+        fontSize: 24,
+        color: 'white',
+        fontWeight: 'bold',
+    },
+    levelBadge: {
+        marginLeft: 10,
+
+        paddingHorizontal: 6,
+        paddingVertical: 2,
+        borderRadius: 15,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    levelText: {
+        color: 'white',
+        fontSize: 14,
+        fontWeight: "bold"
+    },
+    level: {
+        fontWeight: 'bold',
+        color: "#fff",
     },
     settingsButton: {
         position: 'absolute',

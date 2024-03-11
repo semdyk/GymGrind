@@ -7,6 +7,7 @@ import {
     TouchableOpacity,
     ScrollView,
     Alert,
+    Modal
 } from 'react-native';
 import { FontAwesome, Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -15,6 +16,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { getFirestore, doc, setDoc, collection, addDoc, getDoc, docs, getDocs, query } from "firebase/firestore";
 import { db } from '../firebase';
 import { getAuth, onAuthStateChanged } from "firebase/auth";
+import { setOnlineStatus } from '../classes/FriendHandler';
 
 
 const auth = getAuth();
@@ -28,6 +30,37 @@ const WorkoutScreen = ({ route }) => {
         ...exercise,
         sets: Array(3).fill({ reps: '', weight: '', completed: false }),
     })));
+
+    const [isModalVisible, setIsModalVisible] = useState(false);
+    const [newExerciseTitle, setNewExerciseTitle] = useState('');
+
+    const setStatus = async (status) => {
+        const userId = auth.currentUser ? auth.currentUser.uid : null;
+        await setOnlineStatus(userId, status);
+    }
+
+
+    useEffect(() => {
+        setStatus("workout");
+    }, []); // Depend on friendIds
+
+
+    const handleAddExercise = () => {
+        // Create a new exercise object
+        const newExercise = {
+            title: newExerciseTitle,
+            sets: Array(3).fill({ reps: '', weight: '', completed: false }),
+        };
+
+        // Add the new exercise to the current exercises array
+        setExercises([...exercises, newExercise]);
+
+        // Optionally reset the newExerciseTitle to be ready for another addition
+        setNewExerciseTitle('');
+
+        // Close modal if you are using one for adding exercises
+        setIsModalVisible(false);
+    };
 
     const handleChange = (exerciseIndex, setIndex, type, value) => {
         setExercises(exercises.map((exercise, eIndex) => {
@@ -70,6 +103,7 @@ const WorkoutScreen = ({ route }) => {
             });
 
             Alert.alert("Workout Completed", "Your workout has been successfully saved.");
+            setStatus("online");
             navigation.goBack(); // Or navigate to a relevant screen
         } catch (error) {
             console.error("Error completing workout: ", error);
@@ -80,7 +114,7 @@ const WorkoutScreen = ({ route }) => {
 
 
     const handleSettings = () => {
-        navigation.navigate('Settings');
+        navigation.navigate('ProfilePage', { userId: auth.currentUser.uid }); // This will navigate to the previous screen in the stack
     };
 
     const handleBack = () => {
@@ -131,6 +165,14 @@ const WorkoutScreen = ({ route }) => {
                     </View>
 
                 ))}
+                <TouchableOpacity onPress={() => setIsModalVisible(true)} >
+                    <LinearGradient
+                        colors={['rgba(229, 9, 20, 0.363)', 'rgba(241, 39, 17, 0.571)']}
+                        style={[styles.excerciseItemAddButton, { marginBottom: 15, }]}
+                    >
+                        <Text style={styles.excerciseItemAddText}>Add Another Exercise</Text>
+                    </LinearGradient>
+                </TouchableOpacity>
                 <TouchableOpacity onPress={completeWorkout} >
                     <LinearGradient
                         colors={['rgba(229, 9, 20, 0.363)',   // Darker red with less transparency
@@ -143,12 +185,129 @@ const WorkoutScreen = ({ route }) => {
                 </TouchableOpacity>
             </ScrollView>
 
+            <Modal
+                animationType="slide"
+                transparent={true}
+                visible={isModalVisible}
+                onRequestClose={() => {
+                    setIsModalVisible(!isModalVisible);
+                }}
+            >
+                <View style={styles.centeredView}>
+                    <View style={styles.modalView}>
+                        {/* Header */}
+                        <Text style={[styles.textStyle, styles.modalHeader]}>Add Exercise</Text>
+
+                        {/* Input Fields */}
+                        <TextInput
+                            style={styles.modalTextInput}
+                            placeholder="Exercise Title"
+                            placeholderTextColor="#999" // Optional: for better visibility
+                            value={newExerciseTitle}
+                            onChangeText={setNewExerciseTitle}
+                        />
+
+                        {/* Buttons at the Bottom */}
+                        <View style={styles.buttonsContainer}>
+                            <TouchableOpacity
+                                style={[styles.modalButton, styles.modalSaveButton]}
+                                onPress={() => {
+                                    handleAddExercise();
+                                }}
+                            >
+                                <Text style={styles.textStyle}>Save Exercise</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={[styles.modalButton, styles.modalCancelButton]}
+                                onPress={() => {
+                                    setIsModalVisible(false);
+                                }}
+                            >
+                                <Text style={styles.textStyle}>Cancel</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
+
             <BottomBar />
         </View>
     );
 };
 
 const styles = StyleSheet.create({
+    centeredView: {
+        flex: 1,
+        justifyContent: "center",
+        alignItems: "center",
+        marginTop: -50,
+    },
+    modalView: {
+        margin: 20,
+        backgroundColor: "#323232",
+        borderRadius: 20,
+        padding: 35,
+        alignItems: "center",
+        shadowColor: "#000",
+        shadowOffset: {
+            width: 0,
+            height: 2
+        },
+        borderWidth: 2,
+        borderColor: "#fff",
+        shadowOpacity: 0.25,
+        shadowRadius: 4,
+        elevation: 5,
+        width: '80%', // Set a width for the modal
+    },
+    modalHeader: {
+        marginBottom: 20,
+        fontSize: 20,
+    },
+    modalTextInput: {
+        height: 40,
+        width: '100%',
+        marginBottom: 20,
+        borderWidth: 1,
+        padding: 10,
+        borderRadius: 10,
+        color: '#fff', // Ensure text is visible against background
+        borderColor: '#fff', // Optional: Style border
+    },
+    buttonsContainer: {
+        flexDirection: 'row',
+        justifyContent: 'space-around',
+        width: '100%', // Ensure buttons span the modal width
+        marginTop: 20, // Space above buttons
+    },
+    modalButton: {
+        borderRadius: 20,
+        padding: 10,
+        elevation: 2,
+        width: '40%', // Set buttons to occupy 40% of the modal width
+        justifyContent: 'center', // Center text in button
+        alignItems: 'center', // Center text horizontally
+    },
+    modalSaveButton: {
+        backgroundColor: "#2196F3",
+    },
+    modalCancelButton: {
+        backgroundColor: "#f32121",
+    },
+    textStyle: {
+        color: "white",
+        fontWeight: "bold",
+        textAlign: "center"
+    },
+    input: {
+        borderWidth: 1,
+        borderColor: '#ccc',
+        color: '#fff',
+        backgroundColor: '#161616',
+        borderRadius: 10,
+        padding: 10,
+        marginBottom: 10,
+    },
     container: {
         flex: 1,
         backgroundColor: '#161616',
@@ -242,7 +401,7 @@ const styles = StyleSheet.create({
         backgroundColor: 'green',
     },
     notCompleted: {
-        backgroundColor: 'red',
+        backgroundColor: '#161616',
     },
     saveWorkoutButton: {
         backgroundColor: '#4CAF50',

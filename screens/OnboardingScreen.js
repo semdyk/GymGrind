@@ -19,8 +19,7 @@ const OnboardingScreen = ({ }) => {
         const checkUser = async () => {
             const storedUser = await AsyncStorage.getItem('user');
             if (storedUser) {
-                //navigation.navigate('Home');
-                console.log(storedUser)
+                navigation.navigate('Home');
             }
         };
 

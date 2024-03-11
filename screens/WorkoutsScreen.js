@@ -3,7 +3,7 @@ import { StyleSheet, ScrollView, View, Text, Modal, TextInput, TouchableOpacity 
 import { FontAwesome, FontAwesome5, Ionicons } from '@expo/vector-icons';
 import { useNavigation, useIsFocused } from '@react-navigation/native';
 
-import { getFirestore, doc, setDoc, collection, addDoc, getDoc, docs, getDocs, query } from "firebase/firestore";
+import { getFirestore, deleteDoc, doc, setDoc, collection, addDoc, getDoc, docs, getDocs, query } from "firebase/firestore";
 import { db } from '../firebase';
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 
@@ -48,11 +48,21 @@ const WorkoutsScreen = () => {
 
 
     const handleSettings = () => {
-        navigation.navigate('Settings'); // This will navigate to the previous screen in the stack
+        navigation.navigate('ProfilePage', { userId: auth.currentUser.uid }); // This will navigate to the previous screen in the stack
     };
-
     const handleBack = () => {
         navigation.navigate('Home');  // This will navigate to the previous screen in the stack
+    };
+
+    const handleRemove = async (id) => {
+        try {
+            const userId = auth.currentUser ? auth.currentUser.uid : null;
+            await deleteDoc(doc(db, 'users', userId, 'workouts', id));
+            handleBack()
+
+        } catch (error) {
+            console.error('Error removing workout:', error);
+        }
     };
 
     const [expandedWorkoutId, setExpandedWorkoutId] = useState(null);
@@ -95,7 +105,11 @@ const WorkoutsScreen = () => {
                                         {workout.exercises.map((exercise, exerciseIndex) => (
                                             <Text key={exerciseIndex} style={styles.workoutItem}>• {exercise.title}</Text>
                                         ))}
+                                        <TouchableOpacity onPress={() => handleRemove(workout.id)} style={styles.trashIconContainer}>
+                                            <Ionicons name="trash" size={24} color="red" />
+                                        </TouchableOpacity>
                                     </View>
+
                                 )}
                             </View>
                         ))}
@@ -144,6 +158,11 @@ const styles = StyleSheet.create({
         borderRadius: 20, // Ensure this matches your TouchableOpacity's borderRadius
         justifyContent: 'center', // Center the content vertically
         alignItems: 'center', // Center the content horizontally
+    },
+    trashIconContainer: {
+        position: 'absolute', // Position the trash icon absolutely within the container
+        bottom: -5, // 10 pixels from the bottom of the container
+        right: -5, // 10 pixels from the right of the container
     },
     buttonText: {
         fontSize: 20,
