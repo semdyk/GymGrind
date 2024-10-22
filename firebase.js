@@ -9,7 +9,7 @@ import ReactNativeAsyncStorage from '@react-native-async-storage/async-storage';
 const firebaseConfig = {
     databaseURL: "https://gymgrind-75307-default-rtdb.europe-west1.firebasedatabase.app", // Correct database URL
 
-    apiKey: "AIzaSyC1h2_VHhdmnIhZwYD5vVCqDtPkbo1-VHY",
+    apiKey: "********",
     authDomain: "gymgrind-75307.firebaseapp.com",
     projectId: "gymgrind-75307",
     storageBucket: "gymgrind-75307.appspot.com",
